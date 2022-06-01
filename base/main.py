@@ -6,14 +6,13 @@ import asyncio
 import logging
 
 api_id = 000000
-api_hash = '000000000000000000000000'
-bot_token = "0000000000000000000000000000"
+api_hash = '00000000000000000000000000'
+bot_token = "000000000000000000000000"
 adminid = 000000000
+channel = 0000000000000
 
 client = TelegramClient('anon', api_id, api_hash)
 bot = TelegramClient('bot', api_id, api_hash).start(bot_token=bot_token)
-
-channel = 0000000000
 
 
 async def invite(channel, users_to_add):
@@ -34,6 +33,7 @@ async def remove(channel, user):
 
 @bot.on(events.NewMessage(pattern='/start'))
 async def starthandler(event):
+    global d
     # Ответ на первый запуск бота, добавление пользователя в базу
     keyboard = [Button.inline('Оплата', b'pay')], [Button.inline('Сколько дней подписки осталось?', b'check')], [
         Button.inline('Всё оплачено, добавьте меня', b'reinvite')]
@@ -57,15 +57,48 @@ async def checkhandler(event):
 
 
 @bot.on(events.CallbackQuery(data=b'reinvite'))
-async def reinvitehandler(event):
-    # Переприглашение пользователя, если у него активна подписка, и его нет в чате.
-    isparticipant = await asyncio.ensure_future(search(event.chat_id))
-    if isparticipant:
-        await bot.send_message(event.chat_id, 'Вы уже в чате')
+async def inviting(event):
+    # Приглашение пользователя, если у него активна подписка, и его нет в чате.
+    if d[event.chat_id][0] > 0:
+        isparticipant = await asyncio.ensure_future(search(event.chat_id))
+        if isparticipant:
+            await bot.send_message(event.chat_id, 'Вы уже в чате')
+        else:
+            await bot.send_message(event.chat_id, 'Добавляю')
+            # invite(event.chat_id)
     else:
-        await bot.send_message(event.chat_id, 'Добавляю')
-        # invite(event.chat_id)
+        await bot.send_message(event.chat_id, 'Ваша подписка неактивна')
 
+@bot.on(events.CallbackQuery(data=b'pay'))
+async def payhandler(event):
+    # Функция выбора количества месяцев для оплаты
+    keyboard = [Button.inline('1', b'month_1')], [Button.inline('2', b'month_2')], [Button.inline('3', b'month_3')],\
+        [Button.inline('6', b'month_6')], [Button.inline('12', b'month_12')]
+    await bot.send_message(event.chat_id, 'Выберите количество месяцев на оплату',
+                           buttons=keyboard)
+
+@bot.on(events.CallbackQuery(pattern='(?i)month.+'))
+async def monthhandler(event):
+    await bot.send_message(event.chat_id, 'Ссылка для оплаты на ' + str(int(str(event.data)[8:-1]) * 15) + '$')
+    print(d[event.chat_id])
+    d[event.chat_id][5] = int(str(event.data)[8:-1]) * 31
+    await asyncio.ensure_future(confirm(event.chat_id))
+
+async def confirm(userid):
+    keyboard = [Button.inline('Подтвердить', b'confirm')], [Button.inline('Не подтверждать', b'cancel')]
+    m = await bot.send_message(adminid, str(d[userid]), buttons=keyboard)
+    @bot.on(events.CallbackQuery())
+    async def payhandler(event):
+        if event.chat_id == adminid:
+            if event.data == b'confirm':
+                await bot.send_message(userid, 'Добавляю в канал')
+                await bot.delete_messages(adminid, m)
+                d[userid][0] += d[userid][5]
+                # await asyncio.ensure_future(inviting(userid))
+            if event.data == b'cancel':
+                await bot.send_message(userid, 'Платёж не подтвеждён')
+                await bot.delete_messages(adminid, m)
+                return False
 
 async def search(userid):
     # Функция поиска по пользователям канала
