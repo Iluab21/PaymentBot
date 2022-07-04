@@ -1,4 +1,5 @@
 import os
+import config
 from telethon.tl.functions.channels import InviteToChannelRequest
 from telethon import TelegramClient
 from telethon import events
@@ -7,6 +8,7 @@ import telethon
 import asyncio
 from telethon.sessions import StringSession
 import logging
+
 logging.basicConfig(format='[%(levelname) 5s/%(asctime)s] %(name)s: %(message)s',
                     level=logging.WARNING)
 
@@ -26,10 +28,11 @@ try:
 except (EOFError, OSError, SyntaxError):
     d = {}
 # Текстовый логгер ошибок
-with open('logging.txt', 'w') as l:
-    l.write('Exceptions log:')
+with open('logging.txt', 'w') as f:
+    f.write('Exceptions log:')
 m = 0
 message = {}
+
 
 async def invite(users_to_add):
     # Добавление пользователя в чат
@@ -41,9 +44,11 @@ async def invite(users_to_add):
         except ValueError:
             await bot.send_message(admin_id, 'Косяк ' + str(users_to_add))
             keyboard = [Button.inline('Назад', b'main')]
-            await bot.send_message(users_to_add, 'Для того чтобы попасть в закрытый канал, вы должны быть подписчиком канала t.me/ALGtrader', buttons= keyboard)
-        except:
-            await bot.send_message(admin_id, 'Неожиданный косяк с ' + str(users_to_add))
+            await bot.send_message(users_to_add, 'Для того чтобы попасть в закрытый канал, вы должны быть подписчиком '
+                                                 'канала t.me/ALGtrader', buttons=keyboard)
+        except Exception as err:
+            logging.error(err, exc_info=True)
+            await bot.send_message(admin_id, str(err))
 
 
 async def remove(user):
@@ -52,9 +57,9 @@ async def remove(user):
         try:
             await client.get_participants(channel)
             await client.kick_participant(channel, user)
-        except:
-            await bot.send_message(admin_id, 'Неожиданный косяк с ' + str(user))
-
+        except Exception as err:
+            logging.error(err, exc_info=True)
+            await bot.send_message(admin_id, str(err))
 
 
 @bot.on(events.NewMessage(pattern='/start'))
@@ -70,9 +75,9 @@ async def starthandler(event):
         except (telethon.errors.MessageDeleteForbiddenError, KeyError):
             pass
         message[event.chat_id] = await bot.send_message(event.chat_id, 'Выбери, что ты хочешь сделать.',
-                                   buttons=keyboard)
+                                                        buttons=keyboard)
     else:
-        d[event.chat_id] = [5, entity.id, entity.first_name, entity.last_name, entity.username, 0]
+        d[event.chat_id] = [config.trial_limit, entity.id, entity.first_name, entity.last_name, entity.username, 0]
         keyboard = [Button.inline('Оплата', b'pay')], [Button.inline('Сколько дней подписки осталось?', b'check')], [
             Button.inline('Всё оплачено, добавьте меня', b'reinvite')]
         try:
@@ -80,11 +85,13 @@ async def starthandler(event):
         except (telethon.errors.MessageDeleteForbiddenError, KeyError):
             pass
         message[event.chat_id] = await bot.send_message(event.chat_id,
-                                   'Привет! Я бот-менеджер для нашего торгового бота. Сейчас для новичков есть ' +
-                                   str(d[event.chat_id][
-                                       0]) + 'бесплатных дней для ознакомления, мы уже добавляем тебя в чат) '
-                                             '\nВыбери, что ты хочешь сделать.',
-                                   buttons=keyboard)
+                                                        'Привет! Я бот-менеджер для нашего торгового бота. Сейчас для '
+                                                        'новичков есть ' +
+                                                        str(d[event.chat_id][
+                                                                0]) + 'бесплатных дней для ознакомления, мы уже '
+                                                                      'добавляем тебя в чат) '
+                                                                      '\nВыбери, что ты хочешь сделать.',
+                                                        buttons=keyboard)
         isparticipant = await asyncio.ensure_future(search(event.chat_id))
         if isparticipant:
             try:
@@ -101,11 +108,15 @@ async def starthandler(event):
             keyboard = [Button.inline('Оплата', b'pay')], [
                 Button.inline('Сколько дней подписки осталось?', b'check')], [
                            Button.inline('Всё оплачено, добавьте меня', b'reinvite')]
-            message[event.chat_id] = await bot.send_message(event.chat_id, 'Привет! Я бот-менеджер для нашего торгового бота. Сейчас для'
-                                                      ' новичков есть ' +
-                                   str(d[event.chat_id][
-                                       0]) + 'бесплатных дней для ознакомления, мы уже добавляем тебя в чат) '
-                                             '\nВыбери, что ты хочешь сделать.', buttons=keyboard)
+            message[event.chat_id] = await bot.send_message(event.chat_id,
+                                                            'Привет! Я бот-менеджер для нашего торгового бота. Сейчас '
+                                                            'для '
+                                                            ' новичков есть ' +
+                                                            str(d[event.chat_id][
+                                                                    0]) + 'бесплатных дней для ознакомления, мы уже '
+                                                                          'добавляем тебя в чат) '
+                                                                          '\nВыбери, что ты хочешь сделать.',
+                                                            buttons=keyboard)
             await asyncio.ensure_future(invite(event.chat_id))
 
 
@@ -119,7 +130,8 @@ async def checkhandler(event):
         except (telethon.errors.MessageDeleteForbiddenError, KeyError):
             pass
         keyboard = [Button.inline('Назад', b'main')]
-        message[event.chat_id] = await bot.send_message(event.chat_id, 'Осталось ' + str(d[event.chat_id][0]) + ' дней', buttons=keyboard)
+        message[event.chat_id] = await bot.send_message(event.chat_id, 'Осталось ' + str(d[event.chat_id][0]) + ' дней',
+                                                        buttons=keyboard)
     except Exception as err:
         logging.error(err, exc_info=True)
 
@@ -158,7 +170,7 @@ async def payhandler(event):
                                                                                   Button.inline('6', b'month_6')], [
                    Button.inline('12', b'month_12'), Button.inline('Назад', b'main')]
     message[event.chat_id] = await bot.send_message(event.chat_id, 'Выберите количество месяцев на оплату',
-                               buttons=keyboard)
+                                                    buttons=keyboard)
 
 
 @bot.on(events.CallbackQuery(pattern='(?i)month.+'))
@@ -170,8 +182,9 @@ async def monthhandler(event):
     except (telethon.errors.MessageDeleteForbiddenError, KeyError):
         pass
     keyboard = [Button.inline('Оплачено', b'payed')], [Button.inline('Назад', b'pay')]
-    message[event.chat_id] = await bot.send_message(event.chat_id, 'Для оплаты нужно отправить ' + str(int(str(event.data)[8:-1]) * 15 + 5) + " USDT на Binance id 257063459.\nВ заметке к платежу указать имя и фамилию или ник, как вы записаны в Telegram, чтобы вас можно было идентифицировать",
-                               buttons=keyboard)
+    message[event.chat_id] = await bot.send_message(event.chat_id, "Для оплаты нужно:\n " + str(
+        int(str(event.data)[8:-1]) * config.price + config.price_addition) + config.pay_message,
+                                                    buttons=keyboard)
     d[event.chat_id][5] = int(str(event.data)[8:-1]) * 31
 
 
@@ -185,8 +198,9 @@ async def payed(event):
         pass
     keyboard = [Button.inline('В главное меню', b'main')]
     message[event.chat_id] = await bot.send_message(event.chat_id,
-                               'Сейчас мы проверим оплату и, если всё ок, в течение суток добавим вас в канал',
-                               buttons=keyboard)
+                                                    'Сейчас мы проверим оплату и, если всё ок, в течение суток '
+                                                    'добавим вас в канал',
+                                                    buttons=keyboard)
     await asyncio.ensure_future(confirm(event.chat_id))
 
 
@@ -204,7 +218,6 @@ async def confirm(userid):
         Button.inline('Не подтверждать', data='cancel' + str(userid))]
     admin_message = await bot.send_message(admin_id, str(d[userid]), buttons=keyboard)
 
-
     @bot.on(events.CallbackQuery())
     async def pay(event):
         global m
@@ -214,10 +227,11 @@ async def confirm(userid):
                     await bot.delete_messages(userid, message[event.chat_id])
                 except (telethon.errors.MessageDeleteForbiddenError, KeyError):
                     pass
-                message[event.chat_id] = await bot.send_message(userid, 'Подписку подтвердили, если вас нет в канале, добавим)')
+                message[event.chat_id] = await bot.send_message(userid,
+                                                                'Подписку подтвердили, если вас нет в канале, добавим)')
                 try:
                     await bot.delete_messages(admin_id, admin_message)
-                except (telethon.errors.MessageDeleteForbiddenError, KeyError) :
+                except (telethon.errors.MessageDeleteForbiddenError, KeyError):
                     pass
                 d[userid][0] += d[userid][5]
                 isparticipant = await asyncio.ensure_future(search(event.chat_id))
@@ -269,8 +283,8 @@ async def main():
         await bot.run_until_disconnected()
     except Exception as err:
         logging.error(err, exc_info=True)
-        with open('logging.txt', 'a') as l:
-            l.write('\n' + str(err))
+        with open('logging.txt', 'a') as file:
+            file.write('\n' + str(err))
     finally:
         await bot.disconnect()
 
@@ -292,12 +306,10 @@ async def timer():
             except KeyError:
                 pass
         # Чтобы информация сохранялась после перезапуска
-        with open('back.txt', 'w') as f:
-            f.write(str(d))
-
+        with open('back.txt', 'w') as file:
+            file.write(str(d))
 
 
 if __name__ == '__main__':
     loop = asyncio.get_event_loop()
     loop.run_until_complete(main())
-
