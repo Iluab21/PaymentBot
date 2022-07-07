@@ -8,6 +8,7 @@ import telethon
 import asyncio
 from telethon.sessions import StringSession
 import logging
+from ast import literal_eval
 
 logging.basicConfig(format='[%(levelname) 5s/%(asctime)s] %(name)s: %(message)s',
                     level=logging.WARNING)
@@ -20,9 +21,14 @@ client = TelegramClient(StringSession(session), api_id, api_hash)
 bot = TelegramClient('bot', api_id, api_hash)
 # Пробуем подгрузить инфу с прошлых запусков
 try:
-    with open('back.txt', 'r') as f:
-        users_list = eval(f.read())
-except (EOFError, OSError, SyntaxError):
+    print('encode')
+    with open('back.txt', 'r', encoding='utf-8') as f:
+        print('ok')
+        users_list = literal_eval(f.read())
+# except (EOFError, OSError, SyntaxError):
+#     users_list = {}
+except Exception as err:
+    logging.error(err, exc_info=True)
     users_list = {}
 # Текстовый логгер ошибок
 with open('logging.txt', 'w') as f:
@@ -120,6 +126,7 @@ async def starthandler(event):
 @bot.on(events.CallbackQuery(data=b'check'))
 async def days_left(event):
     global m
+    print(users_list)
     # Проверка оставшейся подписки
     try:
         try:
