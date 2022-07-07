@@ -36,27 +36,27 @@ async def invite_user_to_channel(users_to_add):
 
     async with TelegramClient(StringSession(session), api_id, api_hash) as client:
         try:
-            await client.get_participants(open_channel)
-            await client(InviteToChannelRequest(channel=channel, users=[users_to_add]))
+            await client.get_participants(config.open_channel)
+            await client(InviteToChannelRequest(channel=config.channel, users=[users_to_add]))
         except ValueError:
-            await bot.send_message(admin_id, 'Косяк ' + str(users_to_add))
+            await bot.send_message(config.admin_id, 'Косяк ' + str(users_to_add))
             keyboard = [Button.inline('Назад', b'main')]
             await bot.send_message(users_to_add, 'Для того чтобы попасть в закрытый канал, вы должны быть подписчиком '
                                                  'канала t.me/ALGtrader', buttons=keyboard)
         except Exception as err:
             logging.error(err, exc_info=True)
-            await bot.send_message(admin_id, str(err))
+            await bot.send_message(config.admin_id, str(err))
 
 
 async def remove_user_from_channel(user):
     # Удаление пользователя из чата
     async with TelegramClient(StringSession(session), api_id, api_hash) as client:
         try:
-            await client.get_participants(channel)
-            await client.kick_participant(channel, user)
+            await client.get_participants(config.channel)
+            await client.kick_participant(config.channel, user)
         except Exception as err:
             logging.error(err, exc_info=True)
-            await bot.send_message(admin_id, str(err))
+            await bot.send_message(config.admin_id, str(err))
 
 
 @bot.on(events.NewMessage(pattern='/start'))
@@ -179,7 +179,7 @@ async def pay_confirm(event):
     except (telethon.errors.MessageDeleteForbiddenError, KeyError):
         pass
     keyboard = [Button.inline('Оплачено', b'payed')], [Button.inline('Назад', b'pay')]
-    message[event.chat_id] = await bot.send_message(event.chat_id, "Для оплаты нужно:\n " + str(
+    message[event.chat_id] = await bot.send_message(event.chat_id, "Для оплаты нужно:\n" + str(
         int(str(event.data)[8:-1]) * config.price + config.price_addition) + config.pay_message,
                                                     buttons=keyboard)
     users_list[event.chat_id][5] = int(str(event.data)[8:-1]) * 31
@@ -213,7 +213,7 @@ async def confirm(userid):
     global m
     keyboard = [Button.inline('Подтвердить', data=str(userid))], [
         Button.inline('Не подтверждать', data='cancel' + str(userid))]
-    admin_message = await bot.send_message(admin_id, 'Оплата ' + str(users_list[userid][5]) + ' дней\nПользователем: '
+    admin_message = await bot.send_message(config.admin_id, 'Оплата ' + str(users_list[userid][5]) + ' дней\nПользователем: '
                                            + str(users_list[userid][1]) + ' ' + str(users_list[userid][2]) + ' ' +
                                            str(users_list[userid][3]) + ' ' + str(users_list[userid][4]), buttons=keyboard)
 
@@ -221,7 +221,7 @@ async def confirm(userid):
     async def confirmed(event):
         # Функция, вызывающаяся, после подтверждения о том, что админ увидел пришёдший платёж
         global m
-        if event.chat_id == admin_id:
+        if event.chat_id == config.admin_id:
             if event.data == str(userid).encode():
                 try:
                     await bot.delete_messages(userid, message[event.chat_id])
@@ -230,7 +230,7 @@ async def confirm(userid):
                 message[event.chat_id] = await bot.send_message(userid,
                                                                 'Подписку подтвердили, если вас нет в канале, добавим)')
                 try:
-                    await bot.delete_messages(admin_id, admin_message)
+                    await bot.delete_messages(config.admin_id, admin_message)
                 except (telethon.errors.MessageDeleteForbiddenError, KeyError):
                     pass
                 users_list[userid][0] += users_list[userid][5]
@@ -254,7 +254,7 @@ async def confirm(userid):
                 keyboard = [Button.inline('Назад', b'main')]
                 message[event.chat_id] = await bot.send_message(userid, 'Платёж не подтвеждён', buttons=keyboard)
                 try:
-                    await bot.delete_messages(admin_id, admin_message)
+                    await bot.delete_messages(config.admin_id, admin_message)
                 except (telethon.errors.MessageDeleteForbiddenError, KeyError):
                     pass
                 return False
@@ -262,7 +262,7 @@ async def confirm(userid):
 
 async def search_user_in_channel(userid):
     # Функция поиска по пользователям канала
-    users = await bot.get_participants(channel)
+    users = await bot.get_participants(config.channel)
     participant = False
     for i in users:
         if userid == i.id:
@@ -294,7 +294,7 @@ async def timer():
     # Таймер отсчёта дней
     while True:
         await asyncio.sleep(86400)
-        users = await bot.get_participants(channel)
+        users = await bot.get_participants(config.channel)
         for i in users:
             try:
                 if users_list[i.id][0] == 0:
