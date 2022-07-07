@@ -21,14 +21,9 @@ client = TelegramClient(StringSession(session), api_id, api_hash)
 bot = TelegramClient('bot', api_id, api_hash)
 # Пробуем подгрузить инфу с прошлых запусков
 try:
-    print('encode')
     with open('back.txt', 'r', encoding='utf-8') as f:
-        print('ok')
         users_list = literal_eval(f.read())
-# except (EOFError, OSError, SyntaxError):
-#     users_list = {}
-except Exception as err:
-    logging.error(err, exc_info=True)
+except (EOFError, OSError, SyntaxError):
     users_list = {}
 # Текстовый логгер ошибок
 with open('logging.txt', 'w') as f:
