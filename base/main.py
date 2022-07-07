@@ -23,7 +23,7 @@ bot = TelegramClient('bot', api_id, api_hash)
 try:
     with open('back.txt', 'r', encoding='utf-8') as f:
         users_list = literal_eval(f.read())
-except (EOFError, OSError, SyntaxError):
+except (EOFError, OSError, SyntaxError) as err:
     users_list = {}
 # Текстовый логгер ошибок
 with open('logging.txt', 'w') as f:
@@ -121,7 +121,6 @@ async def starthandler(event):
 @bot.on(events.CallbackQuery(data=b'check'))
 async def days_left(event):
     global m
-    print(users_list)
     # Проверка оставшейся подписки
     try:
         try:
