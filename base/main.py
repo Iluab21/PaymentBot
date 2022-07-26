@@ -25,9 +25,6 @@ try:
         users_list = literal_eval(f.read())
 except (EOFError, OSError, SyntaxError) as err:
     users_list = {}
-# Текстовый логгер ошибок
-with open('logging.txt', 'w') as f:
-    f.write('Exceptions log:')
 m = 0
 message = {}
 
@@ -40,7 +37,6 @@ async def invite_user_to_channel(users_to_add):
             await client.get_participants(config.open_channel)
             await client(InviteToChannelRequest(channel=config.channel, users=[users_to_add]))
         except ValueError:
-            await bot.send_message(config.admin_id, 'Косяк ' + str(users_to_add))
             keyboard = [Button.inline('Назад', b'main')]
             await bot.send_message(users_to_add, 'Для того чтобы попасть в закрытый канал, вы должны быть подписчиком '
                                                  'канала t.me/ALGtrader', buttons=keyboard)
@@ -67,7 +63,7 @@ async def starthandler(event):
     entity = await bot.get_entity(event.chat_id)
     if event.chat_id in users_list:
         keyboard = [Button.inline('Оплата', b'pay')], [Button.inline('Сколько дней подписки осталось?', b'check')], [
-            Button.inline('Всё оплачено, добавьте меня', b'reinvite')]
+            Button.inline('Меня нет в чате, добавьте меня', b'reinvite')]
         try:
             await bot.delete_messages(event.chat_id, message[event.chat_id])
         except (telethon.errors.MessageDeleteForbiddenError, KeyError):
@@ -77,7 +73,7 @@ async def starthandler(event):
     else:
         users_list[event.chat_id] = [config.trial_limit, entity.id, entity.first_name, entity.last_name, entity.username, 0]
         keyboard = [Button.inline('Оплата', b'pay')], [Button.inline('Сколько дней подписки осталось?', b'check')], [
-            Button.inline('Всё оплачено, добавьте меня', b'reinvite')]
+            Button.inline('Меня нет в чате, добавьте меня', b'reinvite')]
         try:
             await bot.delete_messages(event.chat_id, message[event.chat_id])
         except (telethon.errors.MessageDeleteForbiddenError, KeyError):
@@ -86,36 +82,9 @@ async def starthandler(event):
                                                         'Привет! Я бот-менеджер для нашего торгового бота. Сейчас для '
                                                         'новичков есть ' +
                                                         str(users_list[event.chat_id][
-                                                                0]) + 'бесплатных дней для ознакомления, мы уже '
-                                                                      'добавляем тебя в чат) '
+                                                                0]) + 'бесплатных дней для ознакомления, '
                                                                       '\nВыбери, что ты хочешь сделать.',
                                                         buttons=keyboard)
-        is_participant = await asyncio.ensure_future(search_user_in_channel(event.chat_id))
-        if is_participant:
-            try:
-                await bot.delete_messages(event.chat_id, message[event.chat_id])
-            except (telethon.errors.MessageDeleteForbiddenError, KeyError):
-                pass
-            keyboard = [Button.inline('Назад', b'main')]
-            message[event.chat_id] = await bot.send_message(event.chat_id, 'Вы уже в чате', buttons=keyboard)
-        else:
-            try:
-                await bot.delete_messages(event.chat_id, message[event.chat_id])
-            except (telethon.errors.MessageDeleteForbiddenError, KeyError):
-                pass
-            keyboard = [Button.inline('Оплата', b'pay')], [
-                Button.inline('Сколько дней подписки осталось?', b'check')], [
-                           Button.inline('Всё оплачено, добавьте меня', b'reinvite')]
-            message[event.chat_id] = await bot.send_message(event.chat_id,
-                                                            'Привет! Я бот-менеджер для нашего торгового бота. Сейчас '
-                                                            'для '
-                                                            ' новичков есть ' +
-                                                            str(users_list[event.chat_id][
-                                                                    0]) + 'бесплатных дней для ознакомления, мы уже '
-                                                                          'добавляем тебя в чат) '
-                                                                          '\nВыбери, что ты хочешь сделать.',
-                                                            buttons=keyboard)
-            await asyncio.ensure_future(invite_user_to_channel(event.chat_id))
 
 
 @bot.on(events.CallbackQuery(data=b'check'))
@@ -284,8 +253,6 @@ async def main():
         await bot.run_until_disconnected()
     except Exception as err:
         logging.error(err, exc_info=True)
-        with open('logging.txt', 'a') as file:
-            file.write('\n' + str(err))
     finally:
         await bot.disconnect()
 
