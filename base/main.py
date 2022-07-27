@@ -85,7 +85,7 @@ async def starthandler(event):
                                                                 0]) + 'бесплатных дней для ознакомления, '
                                                                       '\nВыбери, что ты хочешь сделать.',
                                                         buttons=keyboard)
-        await bot.send_message(config.admin_id, str(users_list[event.chat_id])
+        await bot.send_message(config.admin_id, str(users_list[event.chat_id]))
 
 @bot.on(events.CallbackQuery(data=b'check'))
 async def days_left(event):
