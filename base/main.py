@@ -92,13 +92,16 @@ async def days_left(event):
     global m
     # Проверка оставшейся подписки
     try:
-        try:
-            await bot.delete_messages(event.chat_id, message[event.chat_id])
-        except (telethon.errors.MessageDeleteForbiddenError, KeyError):
-            pass
-        keyboard = [Button.inline('Назад', b'main')]
-        message[event.chat_id] = await bot.send_message(event.chat_id, 'Осталось ' + str(users_list[event.chat_id][0]) + ' дней',
-                                                        buttons=keyboard)
+        if event.chat_id in users_list:
+            try:
+                await bot.delete_messages(event.chat_id, message[event.chat_id])
+            except (telethon.errors.MessageDeleteForbiddenError, KeyError):
+                pass
+            keyboard = [Button.inline('Назад', b'main')]
+            message[event.chat_id] = await bot.send_message(event.chat_id, 'Осталось ' + str(users_list[event.chat_id][0]) + ' дней',
+                                                            buttons=keyboard)
+        else:
+            await starthandler(event)
     except Exception as err:
         logging.error(err, exc_info=True)
 
@@ -107,37 +110,43 @@ async def days_left(event):
 async def inviting(event):
     global m
     # Приглашение пользователя, если у него активна подписка, и его нет в чате. На случай случайного удаления
-    try:
-        await bot.delete_messages(event.chat_id, message[event.chat_id])
-    except (telethon.errors.MessageDeleteForbiddenError, KeyError):
-        pass
-    if users_list[event.chat_id][0] > 0:
-        is_participant = await asyncio.ensure_future(search_user_in_channel(event.chat_id))
-        if is_participant:
-            keyboard = [Button.inline('Назад', b'main')]
-            message[event.chat_id] = await bot.send_message(event.chat_id, 'Вы уже в чате', buttons=keyboard)
+    if event.chat_id in users_list:
+        try:
+            await bot.delete_messages(event.chat_id, message[event.chat_id])
+        except (telethon.errors.MessageDeleteForbiddenError, KeyError):
+            pass
+        if users_list[event.chat_id][0] > 0:
+            is_participant = await asyncio.ensure_future(search_user_in_channel(event.chat_id))
+            if is_participant:
+                keyboard = [Button.inline('Назад', b'main')]
+                message[event.chat_id] = await bot.send_message(event.chat_id, 'Вы уже в чате', buttons=keyboard)
+            else:
+                keyboard = [Button.inline('Назад', b'main')]
+                message[event.chat_id] = await bot.send_message(event.chat_id, 'Добавляю', buttons=keyboard)
+                await asyncio.ensure_future(invite_user_to_channel(event.chat_id))
         else:
             keyboard = [Button.inline('Назад', b'main')]
-            message[event.chat_id] = await bot.send_message(event.chat_id, 'Добавляю', buttons=keyboard)
-            await asyncio.ensure_future(invite_user_to_channel(event.chat_id))
+            message[event.chat_id] = await bot.send_message(event.chat_id, 'Ваша подписка неактивна', buttons=keyboard)
     else:
-        keyboard = [Button.inline('Назад', b'main')]
-        message[event.chat_id] = await bot.send_message(event.chat_id, 'Ваша подписка неактивна', buttons=keyboard)
+        await starthandler(event)
 
 
 @bot.on(events.CallbackQuery(data=b'pay'))
 async def quantity_selection(event):
     global m
     # Функция выбора количества месяцев для оплаты
-    try:
-        await bot.delete_messages(event.chat_id, message[event.chat_id])
-    except (telethon.errors.MessageDeleteForbiddenError, KeyError):
-        pass
-    keyboard = [Button.inline('1', b'month_1'), Button.inline('2', b'month_2')], [Button.inline('3', b'month_3'),
-                                                                                  Button.inline('6', b'month_6')], [
-                   Button.inline('12', b'month_12'), Button.inline('Назад', b'main')]
-    message[event.chat_id] = await bot.send_message(event.chat_id, 'Выберите количество месяцев на оплату',
-                                                    buttons=keyboard)
+    if event.chat_id in users_list:
+        try:
+            await bot.delete_messages(event.chat_id, message[event.chat_id])
+        except (telethon.errors.MessageDeleteForbiddenError, KeyError):
+            pass
+        keyboard = [Button.inline('1', b'month_1'), Button.inline('2', b'month_2')], [Button.inline('3', b'month_3'),
+                                                                                      Button.inline('6', b'month_6')], [
+                       Button.inline('12', b'month_12'), Button.inline('Назад', b'main')]
+        message[event.chat_id] = await bot.send_message(event.chat_id, 'Выберите количество месяцев на оплату',
+                                                        buttons=keyboard)
+    else:
+        await starthandler(event)
 
 
 @bot.on(events.CallbackQuery(pattern='(?i)month.+'))
@@ -159,16 +168,19 @@ async def pay_confirm(event):
 async def payed(event):
     global m
     # Функция перевода на подтверждение платежа админом
-    try:
-        await bot.delete_messages(event.chat_id, message[event.chat_id])
-    except (telethon.errors.MessageDeleteForbiddenError, KeyError):
-        pass
-    keyboard = [Button.inline('В главное меню', b'main')]
-    message[event.chat_id] = await bot.send_message(event.chat_id,
-                                                    'Сейчас мы проверим оплату и, если всё ок, в течение суток '
-                                                    'добавим вас в канал',
-                                                    buttons=keyboard)
-    await asyncio.ensure_future(confirm(event.chat_id))
+    if event.chat_id in users_list:
+        try:
+            await bot.delete_messages(event.chat_id, message[event.chat_id])
+        except (telethon.errors.MessageDeleteForbiddenError, KeyError):
+            pass
+        keyboard = [Button.inline('В главное меню', b'main')]
+        message[event.chat_id] = await bot.send_message(event.chat_id,
+                                                        'Сейчас мы проверим оплату и, если всё ок, в течение суток '
+                                                        'добавим вас в канал',
+                                                        buttons=keyboard)
+        await asyncio.ensure_future(confirm(event.chat_id))
+    else:
+        await starthandler(event)
 
 
 @bot.on(events.CallbackQuery(data=b'main'))
