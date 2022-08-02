@@ -49,7 +49,7 @@ async def invite_user_to_channel(user_to_add):
         except ValueError:
             keyboard = [Button.inline('Назад', b'main')]
             await bot.send_message(user_to_add, 'Для того чтобы попасть в закрытый канал, вы должны быть подписчиком '
-                                                'канала t.me/ALGtrader', buttons=keyboard)
+                                                'канала ' + str(config.open_channel_name), buttons=keyboard)
         except Exception as err:
             logging.error(err, exc_info=True)
             await bot.send_message(config.admin_id, str(err))
@@ -61,7 +61,6 @@ async def remove_user_from_channel(user):
         try:
             await client.get_participants(config.channel)
             await client.kick_participant(config.channel, user)
-            await bot.send_message(user, 'Вы удалены из чата')
         except Exception as err:
             logging.error(err, exc_info=True)
             await bot.send_message(config.admin_id, str(err))
@@ -184,8 +183,13 @@ async def main():
 async def timer():
     # Таймер отсчёта дней
     while True:
-        await asyncio.sleep(86400)
         db.daytimer()
+        try:
+            for i in db.days_are_over():
+                await remove_user_from_channel(int(i))
+        except TypeError:
+            pass
+        await asyncio.sleep(86400)
 
 
 if __name__ == '__main__':

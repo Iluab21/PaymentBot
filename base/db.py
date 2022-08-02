@@ -40,6 +40,12 @@ def daytimer():
     db.commit()
 
 
+def days_are_over():
+    cursor.execute('SELECT user_id FROM users WHERE left_days = 0')
+    user_dict = cursor.fetchone()
+    return user_dict
+
+
 def how_much_days_left(user_id):
     cursor.execute('SELECT left_days FROM users WHERE user_id = ?', (user_id, ))
     days = cursor.fetchone()[0]
