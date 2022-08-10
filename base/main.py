@@ -33,7 +33,7 @@ async def timer():
         db.daytimer()
         try:
             for i in db.days_are_over():
-                await botlogic.bot.remove_user_from_channel(int(i))
+                await botlogic.remove_user_from_channel(int(i))
         except TypeError:
             pass
         await asyncio.sleep(86400)
