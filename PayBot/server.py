@@ -9,6 +9,7 @@ from telethon import events
 from telethon.tl.custom import Button
 from telethon.sessions import StringSession
 
+
 token = os.getenv('TOKEN')
 session = os.getenv('SESSION')
 api_id = int(os.getenv('API_ID'))
@@ -112,7 +113,7 @@ async def quantity_selection(event):
 async def pay_confirm(event):
     # Подтверждение от пользователя, о том что он перевел платёж
     await delete_message(event.chat_id)
-    db.choosen_amount(int(str(event.data)[8:-1]) * 31, event.chat_id)
+    db.choosen_amount(int(str(event.data)[8:-1]), event.chat_id)
     keyboard = [Button.inline('Оплачено', b'payed')], [Button.inline('Назад', b'pay')]
     message[event.chat_id] = await bot.send_message(event.chat_id, "Для оплаты нужно:\n" + str(
         int(str(event.data)[8:-1]) * config.price + config.price_addition) + config.pay_message,

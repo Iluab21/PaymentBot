@@ -1,5 +1,5 @@
 import os
-import botlogic
+import server
 import db
 import asyncio
 import logging

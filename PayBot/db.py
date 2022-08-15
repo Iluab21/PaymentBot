@@ -59,5 +59,5 @@ def get_user_info(user_id):
 
 
 def choosen_amount(amount, user_id):
-    cursor.execute('UPDATE OR REPLACE users SET choosen_amount = ? WHERE user_id = ?', (amount, user_id))
+    cursor.execute('UPDATE OR REPLACE users SET choosen_amount = ? WHERE user_id = ?', (amount * 31, user_id))
     db.commit()
