@@ -17,14 +17,14 @@ db.init_table()
 
 async def main():
     # Старт бота, старт таймера
-    await botlogic.bot.start(bot_token=token)
+    await server.bot.start(bot_token=token)
     asyncio.ensure_future(timer())
     try:
-        await botlogic.bot.run_until_disconnected()
+        await server.bot.run_until_disconnected()
     except Exception as err:
         logging.error(err, exc_info=True)
     finally:
-        await botlogic.bot.disconnect()
+        await server.bot.disconnect()
 
 
 async def timer():
@@ -33,7 +33,7 @@ async def timer():
         db.daytimer()
         try:
             for i in db.days_are_over():
-                await botlogic.remove_user_from_channel(int(i))
+                await server.remove_user_from_channel(int(i))
         except TypeError:
             pass
         await asyncio.sleep(86400)

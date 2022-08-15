@@ -10,7 +10,6 @@ from telethon.tl.custom import Button
 from telethon.sessions import StringSession
 
 
-token = os.getenv('TOKEN')
 session = os.getenv('SESSION')
 api_id = int(os.getenv('API_ID'))
 api_hash = os.getenv('API_HASH')
