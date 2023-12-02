@@ -1,6 +1,6 @@
 import os
 import server
-import db
+import d
 import asyncio
 import logging
 
@@ -8,15 +8,13 @@ logging.basicConfig(format='[%(levelname) 5s/%(asctime)s] %(name)s: %(message)s'
                     level=logging.WARNING)
 
 
-token = os.getenv('TOKEN')
-# Пробуем подгрузить инфу с прошлых запусков
+token os.getenv('TOKEN')
 m = 0
 message = {}
 db.init_table()
 
 
 async def main():
-    # Старт бота, старт таймера
     await server.bot.start(bot_token=token)
     asyncio.ensure_future(timer())
     try:
